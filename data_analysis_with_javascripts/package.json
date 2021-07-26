@@ -1,0 +1,9 @@
+{
+    "name": "JsTuts",
+    "version": "1.0.0",
+    "description": "Data-Forge Notebook - A JavaScript notebook",
+    "dependencies": {
+        "data-forge": "^1.8.17",
+        "data-forge-fs": "^0.0.9"
+    }
+}
