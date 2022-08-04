@@ -18,6 +18,103 @@ sudo lsof -i:22 ## see a specific port such as 22 ##
 sudo nmap -sTU -O IP-address-Here
 ```
 
+### How to check Connection Between Containers 
+Default network that all containers share is called bridge
+
+```bash
+docker network ls
+
+```
+
+#### How to check if a container is in the bridge network
+This will show you all the containers that are connected to that brdidge
+
+```bash
+docker network inspect bridge
+```
+
+#### How Containers Communicate with each other 
+In order to allow containers to communicate with each other you can use the
+default bridge network and then check 
+the IP Address of each container and access them accordingly. 
+
++ docker network inspect container_id | grep address
+
+
+#### Using User Defined Network For Containers to Communicate with each other
++ Create a custom network
+```bash
+docker network create myown-net
+```
+Start a container and connect it to that network
+```bash
+docker run --net myown-net --name container_name -d imagename
+```
+Start another container and connect it to that network
+```bash
+docker run --net myown-net  -it imagename bin/bash
+```
+To access or connect to the other network you can use the name of the container.
+This serves as the hostname
+eg  if container --name is ´mycontainer´
+```bash
+wget -q -O - mycontainer:80
+```
+
+#### How to Connect An Existing Container to a Network
+```bash
+docker network connect myown-net container_name
+```
+
+##### FastAPI Dockerfile
+
++ docker run -d -p 8000:80 fastapi:latest
++ docker run -p 8000:8000 -t -i fastapi
+
+```bash
+FROM python:3.10
+
+WORKDIR /app
+
+COPY requirements.txt ./requirements.txt
+
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+EXPOSE 8000:8000
+
+COPY . /app
+
+CMD uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+#CMD python app.py
+# the --port(8000) must match with the EXPOSE port above(8000)
+
+```
+
+##### Streamlit Dockerfile
+
++ docker run -d -p 8080:8080 app:latest
+
+```bash
+FROM python:3.10
+
+WORKDIR /app
+
+COPY requirements.txt ./requirements.txt
+
+
+RUN pip3 install -r requirements.txt
+
+EXPOSE 8080
+
+COPY . /app
+
+
+CMD streamlit run --server.port 8080 --server.enableCORS false app.py
+```
+
+docker ps --format=$FORMAT
+
+
 
 #### How to SSH Into Docker
 
@@ -155,9 +252,10 @@ $ docker run --name mysql-db -v $(pwd)/datadir:/var/lib/mysql -e MYSQL_ROOT_PASS
 
 
 #### Adding Volume to An Existing Container
+```bash
 docker ps
 docker commit container_id imagename
-
+```
 
 ## SSH 
 
@@ -243,8 +341,54 @@ services:
 
 ```
 
-
+#### How to use a different compose file name
 ```bash
+docker-compose -f docker-compose.test.yml up
+```
 
-
+#### Sample Docker compose for FastAPI
 ```bash
+version: "3"
+services:
+  app:
+    build: .
+    command: "streamlit run --server.port 8080 --server.enableCORS false app.py"
+    ports:
+      - "8501:8501"
+
+```
+#### Sample Dockercompose file for two services
+```bash
+version: "3"
+services:
+  api:
+    container_name: myapi
+    build: booksapi/.
+    command: "uvicorn app:app --host 0.0.0.0 --port 8000 --reload"
+    ports:
+      - "8000:8000"
+    networks: #user defined network bridge for all containers
+      - jcnet
+
+  app:
+    container_name: myapp
+    build: .
+    command: "streamlit run --server.port 8080 --server.enableCORS false app.py"
+    ports:
+      - "8501:8501"
+    networks:
+      - jcnet
+networks:
+  jcnet
+
+    
+
+```
+#### How to run docker-compose
+```bash
+docker-compose build 
+docker-compose up 
+docker-compose down
+sudo docker-compose -f docker-compose-dev.yaml up
+docker-compose build -d
+```
