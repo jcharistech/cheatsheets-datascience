@@ -149,6 +149,20 @@ class ArticlesModel(models.Model):
 
 ```
 
+#### 5. Register Models In admin.py
++ Set up the schema or models for your Database
+```python
+# blogpapp/admin.py
+from django.contrib import admin
+
+# Register your models here.
+from .models import ArticlesModel
+
+admin.site.register(ArticlesModel)
+
+
+```
+
 #### 6. Views For CRUD Apps
 + Same concept and code  for every CRUD app
 ```python
@@ -293,8 +307,8 @@ Using Forms in HTML For collecting data
 #### 11. For Looping Through Data From DB
 ```html
 {% for article in articles %}
-	{{ article.title }}
-	<a href="{% url 'read' article.id %}"> {{ article.title }} </a>       
+    {{ article.title }}
+    <a href="{% url 'read' article.id %}"> {{ article.title }} </a>       
 {% endfor %}
 ```
 
@@ -317,6 +331,80 @@ Using Forms in HTML For collecting data
 
 {% endblock content %}
     
+```
+
+or
+
+#### Base.html
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="style.css">
+    <title>{% block title %}My amazing site{% endblock %}</title>
+</head>
+
+<body>
+    <div id="sidebar">
+        {% block sidebar %}
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/blog/">Blog</a></li>
+        </ul>
+        {% endblock %}
+    </div>
+
+    <div id="content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+```
+
+#### In All pages
+```html
+{% extends "base.html" %}
+
+{% block title %}My amazing blog{% endblock %}
+
+{% block content %}
+{% for entry in blog_entries %}
+    <h2>{{ entry.title }}</h2>
+    <p>{{ entry.body }}</p>
+{% endfor %}
+{% endblock %}
+</html>
+```
+#### For Static Files, Bootstrap
++ create a folder named static at the same level as manage.py
++ Add the following to settings.py
+```python
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.0/howto/static-files/
+
+STATIC_URL = 'static/'
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATIC_ROOT = os.path.join(BASE_DIR,'root') # this will be created and where django will look for the built static files
+STATICFILES_DIRS = [
+os.path.join(BASE_DIR,'static'),
+os.path.join(BASE_DIR,'static/bootstrap')
+]
+
+
+```
+
+```bash
+python manage.py collectstatic
+```
+In your html template add
+```html
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
 ```
 
 
@@ -439,6 +527,232 @@ def logoutview(request):
         }
         </script>
 ```
+
+
+#### StaticFiles
+```python
+# settings.py
+STATIC_URL = '/static/'
+
+# look for static files that are not tied to a particular app from the list of dir
+# project root directory
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
+
+# where collectstatic command places the built static files it collects from all static
+# this will be created in project root directory
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+
+```
+##### App Structure for Bootstrap/Staticfiles
+```bash
+myproject
+--myproject
+----**init**.py
+----settings.py
+----urls.py
+----wsgi.py
+--myapp
+--static # equivalent to STATIC_URL = '/static/'
+----bootstrap # equivalent to STATICFILES_DIRS=(os.path.join(BASE_DIR, 'static/bootstrap'),)
+-------css
+-------js
+--manage.py
+```
+
+
+##### In HTML
+```html
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blog</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'bootstrap/css/bootstrap.css' %}">
+
+</head>
+```
+
+### Using Dropdown Choices in Filter
+```python
+FILTER_CHOICES = (
+    ('new', 'New'),
+    ('accepted', 'Accepted'),
+    ('assigned', 'Assigned'),
+    ('reopened', 'Reopened'),
+    ('closed', 'Closed'),
+    ('', 'Any'),
+)
+
+# And your TicketFilter would be:
+
+class TicketFilter(django_filters.FilterSet):
+
+   status = django_filters.ChoiceFilter(choices=FILTER_CHOICES)
+
+   class Meta:
+      model = Ticket
+      fields = ['assigned_to']
+```
+
+### Using Django-Debug-Toolbar
+pip install django-debug-toolbar
+
++ Add to INSTALLED_APPS
+```python
+# settings.py
+ INSTALLED_APPS = [
+    # ...
+    "debug_toolbar",
+    # ...
+]
+```
+
++ Add to MIDDLEWARE & INTERNAL IP
+
+```python
+# settings.py
+MIDDLEWARE = [
+    # ...
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    # ...
+]
+
+INTERNAL_IPS = [
+    # ...
+    "127.0.0.1",
+    # ...
+]
+
+```
+
++ Add to urls.py of main project
+```python
+# blogproject/urls.py
+from django.urls import include, path
+
+urlpatterns = [
+    # ...
+    path('__debug__/', include('debug_toolbar.urls')),
+]
+
+```
+
+### Testing Django 
+
+#### Structure for Project
++ every app has a tests.py file where you can place your tests
+
+├── blogapp
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── __init__.py
+│   ├── migrations
+│   ├── models.py
+│   ├── templates
+│   ├── tests    ### you create this and run 'python3 manage.py test blogapp.tests'
+│       ├── __init__.py
+│       └── test_home_page.py
+│   ├── tests.py ### Defaults tests.py for each app
+│   ├── urls.py
+│   └── views.py
+├── blogproject
+│   ├── asgi.py
+│   ├── __init__.py
+│   ├── __pycache__
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── db.sqlite3
+├── __init__.py
+└── manage.py
+
+
+
+
+#### Unittest Django
+```python
+from django.test import TestCase
+
+
+class TestPage(TestCase):
+    def test_home_page_works(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'index.html')
+        self.assertContains(response, 'Megablog')
+
+
+```
+##### Test Requests
+```python
+from django.test import TestCase
+from django.test.client import RequestFactory
+class RequestTests(TestCase):
+
+    def setUp(self):
+        # Every test needs access to the request factory.
+        self.factory = RequestFactory()
+        # Add records to test DB
+        populate_test_db()
+
+    def test_home_view_without_client(self):
+        request = self.factory.get('/')
+        response = home(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Some text that should be in the HOME view")
+
+```
+##### Testing Models
+```python
+# Testing Models
+import json
+import time
+from django.contrib.auth.models import User
+from my_application.models import Category, Thing
+
+def populate_test_db():
+    """
+    Adds records to an empty test database
+    """
+    cat = Category.objects.create(cat_name='Widgets')
+    cat_inactive = Category.objects.create(cat_name='Inactive Category',
+                                            cat_active=False)
+    thing1 = Thing.objects.create(category=cat,
+                                thing_desc="Test Thing",
+                                thing_model="XYZ1234",
+                                thing_brand="Brand X")
+
+    User.objects.create_user(
+        username='admin',
+        email='admin@test.com',
+        password='secret666')
+
+
+def login_client_user(self):
+    self.client.login(username='admin', password='secret666')
+    return self
+
+def logout_client_user(self):
+    self.client.logout()
+    return self
+
+def is_json(myjson):
+    """
+    tests if a string is valid JSON
+    """
+    try:
+        json_object = json.loads(myjson)
+    except ValueError, e:
+        return False
+    return True
+```
+
+
 
 
 #### By 
