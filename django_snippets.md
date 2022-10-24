@@ -645,7 +645,7 @@ urlpatterns = [
 
 #### Structure for Project
 + every app has a tests.py file where you can place your tests
-
+```
 ├── blogapp
 │   ├── admin.py
 │   ├── apps.py
@@ -671,7 +671,7 @@ urlpatterns = [
 ├── __init__.py
 └── manage.py
 
-
+```
 
 
 #### Unittest Django
