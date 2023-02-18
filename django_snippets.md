@@ -278,6 +278,14 @@ class ArticlesFilter(django_filters.FilterSet):
         model = ArticlesModel
         fields = ["title","author"]
 
+
+# Create a Filter and character search
+class ArticlesFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(lookup_expr='iexact')
+    class Meta:
+        model = ArticlesModel
+        fields = ["title","author"]
+
 ```
 
 
@@ -390,7 +398,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = os.path.join(BASE_DIR,'root') # this will be created and where django will look for the built static files
 STATICFILES_DIRS = [
-os.path.join(BASE_DIR,'static'),
+os.path.join(BASE_DIR,'static'),# required to load the static files
 os.path.join(BASE_DIR,'static/bootstrap')
 ]
 
@@ -752,8 +760,99 @@ def is_json(myjson):
     return True
 ```
 
+#### Adding Pagination
+```python
+# views.py
+from django.core.paginator import Paginator
 
 
+def index(request):
+    bible_passages = BibleModel.objects.all()
+    myFilter = BibleModelFilter(request.GET, queryset=bible_passages)
+    bible_passages = myFilter.qs
+    paginator = Paginator(bible_passages, 25)  # Show 25 contacts per page.
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {"name":"Jesse","bible_passages":bible_passages,"myFilter":myFilter,'page_obj': page_obj}
+    return render(request, "index.html", context)
+
+```
+#### Add to HTML
+```html
+ {% for passage in page_obj %}
+  <tbody>
+    <tr>
+      <th scope="row"> {{ passage.book }}</th>
+
+      <td>{{ passage.chapter }}</td>
+      <td>{{ passage.verse }}</td>
+        <td><a href="{% url 'read' passage.id %}"> view </a></td>
+    </tr>
+  </tbody>
+        {% empty %}
+        <p>No Results Found</p>
+        {% endfor %}
+
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+```
+
+
+#### Adding Datatables.js
+```html
+<head>
+    <link rel="stylesheet" href="style.css">
+    <title>{% block title %}MLDB Project{% endblock %}</title>
+
+<link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+  <link href="{% static 'css/style.css' %}">
+    <link href="{% static 'css/dataTables.bootstrap.min.css' %}">
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.2/css/jquery.dataTables.css">
+</head>
+
+<body>
+
+<table class="table table-bordered" id="examples">
+        {% for i in list_of_items %}
+</table>
+
+<script src="{% static 'js/jquery.min.js' %}"></script>
+<script src="{% static 'js/tether.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+<script src="{% static 'js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'js/dataTables.bootstrap.min.js' %}"></script>
+<!--For Datatables-->
+    <script>
+    $(document).ready(function(){
+        $("#example").DataTable({
+        // Configuration
+        paging:true, // Pagination
+        pageLength: 20, // Data per page
+        autoWidth: false, // Control column width
+        searching: false, // Search globally in table
+        bSort:true,// Filter A to Z
+        bInfo: true, // bottom info
+
+        })});
+
+    </script>
+</body>
+```
 
 #### By 
 * Jesse E.Agbe(JCharis)
