@@ -854,6 +854,71 @@ def index(request):
 </body>
 ```
 
+### Deploying Django Project with Nginx(server,static files) & Gunicorn(wsgi)
+#### Add IP or Domain Name to ALLOWED HOST in settings.py
+
+
+#### Map the hosts (/etc/hosts)
+```hosts
+127.0.0.1   localhost
+my_ip_address myproject.com
+127.0.0.1   myproject.com
+
+```
+
+mkdir conf
+nano conf/gunicorn_config.py
+Paste the following inside gunicorn_config.py
+```python
+command='/home/myproject/venv/bin/gunicorn'
+pythonpath='/home/myproject'
+bind = '127.0.0.1:8000'
+workers = 3
+```
+#### Start Gunicorn to Start Django
+```bash
+gunicorn -c conf/gunicorn_config.py myproject.wsgi
+```
+
+#### Setting Up Nginx
+1. Create a config for your site
+```
+nano /etc/nginx/sites-available/myproject.conf
+```
+2. Paste this in the conf file
+```
+server {
+    listen 80;
+    server_name my_ip_address;
+
+    location /static/ {
+        root /home/path/to/myproject/static/;
+    }
+    location / {
+        proxy_pass http://ip_or_sitename:8000:
+    }
+}
+
+
+```
+
+3. Move to sites-enable and create a sym link to there
+```bash
+cd /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/myproject 
+```
+or 
+```bash
+sudo ln -s /etc/nginx/sites-available/myproject.conf  /etc/nginx/sites-enabled/
+```
+4. Restart nginx
+```bash
+sudo systemctl restart nginx
+systemctl status nginx.service
+```
+
+
+
 #### By 
 * Jesse E.Agbe(JCharis)
 * Jesus Saves @JCharisTech
